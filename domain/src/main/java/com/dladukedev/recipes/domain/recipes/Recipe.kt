@@ -8,7 +8,7 @@ data class Recipe(
     val cookTime: Int,
     val prepTime: Int,
     val ingredients: List<Ingredient>,
-    val instruction: List<Instruction>,
+    val instructions: List<Instruction>,
 )
 
 data class Ingredient(

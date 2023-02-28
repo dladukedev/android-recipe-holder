@@ -1,6 +1,12 @@
 package com.dladukedev.recipes.ui.recipes
 
+import android.util.Log
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -10,8 +16,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -20,6 +28,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -27,6 +36,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
@@ -66,7 +78,9 @@ fun RecipeListScreen(
 ) {
     Scaffold(
         floatingActionButton = {
-            FloatingActionButton(onClick = { onClickAdd() }) {
+            FloatingActionButton(
+                onClick = { onClickAdd() },
+                modifier = Modifier.testTag("fab-test-tag").background(color = Color.Red)) {
                 Icon(imageVector = Icons.Default.Add, contentDescription = "Add Button")
             }
         }
@@ -79,7 +93,8 @@ fun RecipeListScreen(
             when (state.recipes) {
                 is Result.Content -> RecipeList(
                     recipes = state.recipes.data,
-                    onSelectRecipe = onSelectRecipe
+                    onSelectRecipe = onSelectRecipe,
+                    modifier = Modifier.fillMaxSize(),
                 )
 
                 Result.Error -> RecipesError()
@@ -92,18 +107,21 @@ fun RecipeListScreen(
 @Composable
 fun RecipeList(
     recipes: ImmutableList<RecipeListItemDisplayModel>,
-    onSelectRecipe: (RecipeListItemDisplayModel) -> Unit
+    onSelectRecipe: (RecipeListItemDisplayModel) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
-    LazyColumn {
-        items(recipes.list, { it.id }) { recipe ->
-            RecipeListItem(recipe = recipe, onClick = onSelectRecipe)
+    LazyColumn(modifier = modifier) {
+        itemsIndexed(recipes.list, { _, item ->  item.id }) { index, recipe ->
+        RecipeListItem(recipe = recipe, onClick = onSelectRecipe, modifier = Modifier.testTag("Whatever"))
         }
     }
 }
-
+val modifierSpecial = Modifier.padding(32.dp)
 @Composable
-fun RecipesError() {
-    Text("ERROR TODO")
+fun RecipesError(modifier: Modifier = Modifier) {
+    Text("ERROR TODO", modifier = Modifier
+        .padding(10.dp)
+        .then(modifierSpecial))
 }
 
 @Preview
@@ -114,9 +132,10 @@ fun PreviewRecipesError() {
         {}
     )
 }
+
 @Composable
-fun RecipesLoading() {
-    Text("Loading...")
+fun RecipesLoading(modifier: Modifier = Modifier) {
+    Text("Loading...", modifier = modifier)
 }
 
 @Composable
@@ -125,8 +144,17 @@ fun RecipeListItem(
     onClick: (RecipeListItemDisplayModel) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val fadeAnimation = remember {
+        Animatable(0f)
+    }
+
+   LaunchedEffect(key1 = Unit)  {
+fadeAnimation.animateTo(1f, tween(5005, easing = LinearEasing))
+   }
+
     Row(
         verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center,
         modifier = modifier.clickable { onClick(recipe) }) {
         AsyncImage(
             model = recipe.image,
@@ -135,8 +163,8 @@ fun RecipeListItem(
                 .padding(start = 8.dp, top = 4.dp, bottom = 4.dp)
         )
         Spacer(modifier = Modifier.width(8.dp))
-        Column {
-            Text(text = recipe.name, style = MaterialTheme.typography.headlineSmall)
+        Column(modifier = Modifier.align(Alignment.CenterVertically)) {
+            Text(text = recipe.name, style = MaterialTheme.typography.headlineSmall, modifier = Modifier.alpha(fadeAnimation.value))
             Text(text = "${recipe.totalTime} minutes", style = MaterialTheme.typography.labelSmall)
             recipe.description?.let {
                 Text(text = it, style = MaterialTheme.typography.bodySmall)
